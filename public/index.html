@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIカンパニー</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 左サイドバー -->
+  <aside id="sidebar">
+    <div class="office-title"><span id="companyName">AIカンパニー</span> オフィス</div>
+
+    <section class="panel">
+      <div class="panel-head">📋 タスクボード <button class="mini-btn" id="planBtn" title="COOが今日のタスクを提案">今日のタスクを決める</button></div>
+      <div class="task-counts" id="taskCounts"></div>
+      <div id="taskList"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">🎯 会社目標</div>
+      <div class="goal-text" id="goalText"></div>
+      <div class="progress"><div class="progress-bar" id="goalBar"></div><span class="progress-num" id="goalNum">0%</span></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">🖋 社長の決裁トレイ <span class="badge" id="approveCount">0</span></div>
+      <div id="approveList"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">📦 成果物BOX <span class="badge" id="outputCount">0</span></div>
+      <div id="outputList"></div>
+    </section>
+  </aside>
+
+  <!-- オフィスフロア -->
+  <main id="floor">
+    <div id="notice"></div>
+    <div id="office">
+      <div id="ceoRoom">
+        <div class="room-label">👑 社長室</div>
+        <div class="ceo-desk"></div>
+        <div class="char ceo" id="ceoChar"></div>
+      </div>
+      <div class="window w1"></div><div class="window w2"></div><div class="window w3"></div>
+      <div class="rug"></div>
+      <div class="meeting-table"></div>
+      <div class="plant p1">🪴</div><div class="plant p2">🌵</div>
+      <div class="cat">🐈</div>
+      <div class="cooler">🧊</div>
+      <div id="staffArea"></div>
+    </div>
+
+    <!-- ワンタップ指示 -->
+    <div id="actions">
+      <div class="actions-label">⚡ ワンタップ指示（押すとAI社員が実際に働きます）</div>
+      <div class="actions-row">
+        <button data-act="plan">🗓 今日のタスクを決める</button>
+        <button data-act="chat">👩‍💼 COOへ相談する</button>
+        <button data-act="assign">💼 社員へ仕事を振る</button>
+        <button data-act="outputs">📦 成果物を確認する</button>
+        <button data-act="review">📊 週次レビューを行う</button>
+        <button data-act="reset" class="danger">🏗 会社を作り直す</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 会社設立モーダル -->
+<div class="modal hidden" id="setupModal">
+  <div class="modal-box">
+    <h2>🏢 AIカンパニーを設立する</h2>
+    <p class="modal-sub">質問は5つだけ。AIが社員6人を採用してオフィスを開きます。</p>
+    <label>会社名<input id="inName" placeholder="例: ちゅっちゅぐー株式会社"></label>
+    <label>何をする会社？<input id="inBusiness" placeholder="例: ハンドメイド作品の販売とSNS発信"></label>
+    <label>今期の目標<input id="inGoal" placeholder="例: 月商10万円とフォロワー1000人"></label>
+    <label>社長（あなた）のお名前<input id="inCeo" placeholder="例: せいこ"></label>
+    <label>会社の雰囲気<input id="inVibe" placeholder="例: かわいくて明るい / 和風でしぶい"></label>
+    <button id="setupBtn" class="primary">設立する（30秒ほどかかります）</button>
+  </div>
+</div>
+
+<!-- 仕事を振るモーダル -->
+<div class="modal hidden" id="assignModal">
+  <div class="modal-box">
+    <h2>💼 社員へ仕事を振る</h2>
+    <label>誰に？<select id="assignWho"></select></label>
+    <label>何をしてほしい？<textarea id="assignWhat" rows="3" placeholder="例: 新商品のInstagram告知文を3案つくって"></textarea></label>
+    <div class="modal-btns">
+      <button class="ghost" data-close>やめる</button>
+      <button class="primary" id="assignGo">お願いする</button>
+    </div>
+  </div>
+</div>
+
+<!-- COO相談モーダル -->
+<div class="modal hidden" id="chatModal">
+  <div class="modal-box">
+    <h2>👩‍💼 COOへ相談</h2>
+    <div id="chatLog"></div>
+    <div class="chat-input">
+      <input id="chatText" placeholder="例: 今週なにを優先すべき？">
+      <button class="primary" id="chatSend">送る</button>
+    </div>
+    <div class="modal-btns"><button class="ghost" data-close>とじる</button></div>
+  </div>
+</div>
+
+<!-- 成果物ビューア -->
+<div class="modal hidden" id="viewModal">
+  <div class="modal-box wide">
+    <h2 id="viewTitle">成果物</h2>
+    <pre id="viewBody"></pre>
+    <div class="modal-btns">
+      <button class="ghost" id="viewApprove">✅ 承認する</button>
+      <button class="ghost" id="viewReject">↩️ 差し戻す</button>
+      <button class="ghost" data-close>とじる</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
