@@ -1,4 +1,5 @@
 // AIカンパニー フロントエンド（依存ゼロ）
+// キャラは常駐DOM + 徘徊AIでわらわら動く。状態は3秒ポーリング。
 const $ = (s) => document.querySelector(s);
 let state = null;
 let viewingFile = null;
@@ -15,12 +16,171 @@ async function api(path, body) {
   return data;
 }
 
-// ---------- 描画 ----------
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// ============================================================
+// オフィスのキャラクター常駐管理（わらわらアニメーション）
+// ============================================================
+const office = { built: false, chars: new Map(), desks: new Map() };
+const IDLE_EMOTES = ["☕", "🎵", "💬", "🌸", "😊", "📱", "🍡"];
+const WORK_EMOTES = ["💭", "✍️", "📝", "🔥", "💡"];
+
+function officeSize() {
+  const el = $("#office");
+  return { w: el.clientWidth, h: el.clientHeight };
+}
+
+// 机の定位置（オフィス下半分に横並び）
+function deskPos(i, n) {
+  const { w, h } = officeSize();
+  const margin = w * 0.06;
+  const span = w - margin * 2 - 90;
+  return { x: margin + (span / Math.max(1, n - 1)) * i, y: h - 150 };
+}
+
+// 徘徊の目的地候補
+function wanderSpots() {
+  const { w, h } = officeSize();
+  return [
+    { x: w * 0.42, y: h * 0.36 },            // 会議テーブル
+    { x: w - 120, y: h * 0.46 },             // ウォーターサーバー
+    { x: w * 0.5, y: h * 0.55 },             // ラグ
+    { x: w * 0.25, y: h * 0.6 },
+    { x: w * 0.68, y: h * 0.4 },
+    { x: w * 0.8, y: h * 0.62 },             // ねこの近く
+  ];
+}
+
+function buildOffice(employees) {
+  const officeEl = $("#office");
+  office.chars.forEach((c) => c.el.remove());
+  office.desks.forEach((d) => d.remove());
+  office.chars.clear(); office.desks.clear();
+
+  employees.forEach((e, i) => {
+    const p = deskPos(i, employees.length);
+    const desk = document.createElement("div");
+    desk.className = "staff-desk";
+    desk.style.left = p.x + 10 + "px";
+    desk.style.top = p.y + 92 + "px";
+    officeEl.appendChild(desk);
+    office.desks.set(e.id, desk);
+
+    const el = document.createElement("div");
+    el.className = "char";
+    el.style.left = p.x + "px";
+    el.style.top = p.y + "px";
+    el.innerHTML = `
+      <div class="bubble" style="display:none"></div>
+      <span class="emote"></span>
+      <div class="doll"><div class="face"></div><div class="body"></div></div>
+      <div class="nametag"></div>
+      <div class="status"></div>`;
+    officeEl.appendChild(el);
+    office.chars.set(e.id, { el, x: p.x, y: p.y, home: p, mode: "idle", nextMove: Date.now() + 2000 + Math.random() * 4000, emoteAt: 0 });
+  });
+  office.built = true;
+}
+
+function updateChars(employees) {
+  employees.forEach((e) => {
+    const c = office.chars.get(e.id);
+    if (!c) return;
+    const el = c.el;
+    el.querySelector(".face").textContent = e.emoji || "🙂";
+    el.querySelector(".body").style.background = e.color || "#9bc4e8";
+    el.querySelector(".nametag").textContent = `${e.name}｜${e.role}`;
+    const st = el.querySelector(".status");
+    st.textContent = e.status === "working" ? "作業中" : "待機中";
+    st.className = "status" + (e.status === "working" ? " working" : "");
+    const bub = el.querySelector(".bubble");
+    if (e.bubble) { bub.textContent = e.bubble; bub.style.display = ""; } else { bub.style.display = "none"; }
+    c.working = e.status === "working";
+  });
+}
+
+// 0.4秒ごとの「意思決定」ティック
+setInterval(() => {
+  if (!office.built) return;
+  const now = Date.now();
+  office.chars.forEach((c) => {
+    const el = c.el;
+    if (c.working) {
+      // 作業中: 自分の机へ戻ってカタカタ。考え事エモートを回す
+      if (c.mode !== "work") {
+        c.mode = "work";
+        moveTo(c, c.home.x, c.home.y);
+      }
+      el.classList.add("working");
+      el.classList.remove("walking");
+      if (now > c.emoteAt) {
+        setEmote(el, WORK_EMOTES[Math.floor(Math.random() * WORK_EMOTES.length)]);
+        c.emoteAt = now + 2200 + Math.random() * 1800;
+      }
+    } else {
+      el.classList.remove("working");
+      if (c.mode === "work") { c.mode = "idle"; c.nextMove = now + 1000; }
+      // 待機中: ときどき徘徊。目的地に着いたら少し休んでまた歩く
+      if (now > c.nextMove) {
+        const spots = wanderSpots();
+        const goHome = Math.random() < 0.35;
+        const t = goHome ? c.home : spots[Math.floor(Math.random() * spots.length)];
+        const jitter = () => (Math.random() - 0.5) * 40;
+        moveTo(c, t.x + (goHome ? 0 : jitter()), t.y + (goHome ? 0 : jitter()));
+        c.nextMove = now + 5000 + Math.random() * 7000;
+        if (Math.random() < 0.5) setEmote(el, IDLE_EMOTES[Math.floor(Math.random() * IDLE_EMOTES.length)]);
+        else setEmote(el, "");
+      }
+    }
+  });
+}, 400);
+
+function moveTo(c, x, y) {
+  const { w, h } = officeSize();
+  x = Math.max(10, Math.min(w - 96, x));
+  y = Math.max(60, Math.min(h - 150, y));
+  c.el.classList.add("walking");
+  c.el.classList.toggle("flip", x < c.x);
+  c.el.style.left = x + "px";
+  c.el.style.top = y + "px";
+  c.x = x; c.y = y;
+  clearTimeout(c.walkTimer);
+  c.walkTimer = setTimeout(() => c.el.classList.remove("walking"), 2400);
+}
+
+function setEmote(el, emoji) {
+  const em = el.querySelector(".emote");
+  em.textContent = emoji;
+  em.classList.toggle("show", !!emoji);
+}
+
+// 提出があった瞬間に書類が決裁トレイ方向へ飛ぶ演出
+let prevPending = -1;
+function paperFlyEffect() {
+  const officeEl = $("#office");
+  const paper = document.createElement("div");
+  paper.className = "paper-fly";
+  paper.textContent = "📄";
+  const { w, h } = officeSize();
+  paper.style.left = w / 2 + "px";
+  paper.style.top = h - 160 + "px";
+  officeEl.appendChild(paper);
+  requestAnimationFrame(() => {
+    paper.style.left = "-30px";
+    paper.style.top = "40px";
+    paper.style.opacity = "0";
+  });
+  setTimeout(() => paper.remove(), 1600);
+}
+
+// ============================================================
+// 描画
+// ============================================================
 function render() {
   const c = state.company;
   $("#notice").textContent = state.notice || (state.busy ? "🐝 AI社員が作業中です…" : "");
 
-  if (!c) { $("#setupModal").classList.remove("hidden"); return; }
+  if (!c) { $("#setupModal").classList.remove("hidden"); office.built = false; return; }
   $("#setupModal").classList.add("hidden");
 
   $("#companyName").textContent = c.name;
@@ -28,11 +188,20 @@ function render() {
   $("#goalBar").style.width = c.goalProgress + "%";
   $("#goalNum").textContent = c.goalProgress + "%";
 
-  // 社長
-  $("#ceoChar").innerHTML = charHTML({ name: c.ceoName, role: "社長", emoji: "🤴", color: "#caa2d8", status: "idle", bubble: "" }, false);
+  // 社長（社長室に常駐）
+  $("#ceoChar").innerHTML = `
+    <span class="emote show">👑</span>
+    <div class="doll"><div class="face">🤴</div><div class="body" style="background:#caa2d8"></div></div>
+    <div class="nametag">${esc(c.ceoName)}｜社長</div>`;
 
-  // 社員
-  $("#staffArea").innerHTML = c.employees.map((e) => `<div class="char ${e.status === "working" ? "working" : ""}">${charHTML(e, true)}</div>`).join("");
+  // 社員（初回だけDOM生成、以降は状態更新のみ→アニメが途切れない）
+  if (!office.built) buildOffice(c.employees);
+  updateChars(c.employees);
+
+  // 提出演出
+  const pending = state.tasks.filter((t) => t.status === "確認待ち").length;
+  if (prevPending >= 0 && pending > prevPending) paperFlyEffect();
+  prevPending = pending;
 
   // タスクボード
   const counts = { 未着手: 0, 作業中: 0, 確認待ち: 0, 完了: 0 };
@@ -62,17 +231,6 @@ function render() {
     : `<div class="empty">まだ成果物はありません</div>`;
 }
 
-function charHTML(e, withDesk) {
-  return `${e.bubble ? `<div class="bubble">${esc(e.bubble)}</div>` : ""}
-    <div class="face">${e.emoji || "🙂"}</div>
-    <div class="body" style="background:${e.color || "#9bc4e8"}"></div>
-    <div class="nametag">${esc(e.name)}｜${esc(e.role)}</div>
-    <div class="status ${e.status === "working" ? "working" : ""}">${e.status === "working" ? "作業中" : "待機中"}</div>
-    ${withDesk ? '<div class="desk"></div>' : ""}`;
-}
-
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
 // ---------- 操作 ----------
 window.startTask = async (taskId) => { await api("/api/start", { taskId }); poll(); };
 
@@ -100,6 +258,7 @@ $("#setupBtn").onclick = async () => {
   $("#setupBtn").disabled = true; $("#setupBtn").textContent = "設立中…（AIが社員を採用しています）";
   try {
     await api("/api/setup", { name, business, goal, ceoName: $("#inCeo").value.trim(), vibe: $("#inVibe").value.trim() });
+    office.built = false;
   } catch (e) { alert(e.message); }
   $("#setupBtn").disabled = false; $("#setupBtn").textContent = "設立する（30秒ほどかかります）";
   poll();
@@ -119,7 +278,7 @@ async function act(kind) {
   }
   if (kind === "chat") { renderChat(); $("#chatModal").classList.remove("hidden"); }
   if (kind === "reset") {
-    if (confirm("会社を作り直しますか？（社員・タスク・進捗はリセット。成果物ファイルは残ります）")) { await api("/api/reset", {}); }
+    if (confirm("会社を作り直しますか？（社員・タスク・進捗はリセット。成果物ファイルは残ります）")) { await api("/api/reset", {}); office.built = false; }
   }
   poll();
 }
@@ -150,6 +309,9 @@ $("#chatSend").onclick = async () => {
 $("#chatText").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#chatSend").click(); });
 
 document.querySelectorAll("[data-close]").forEach((b) => (b.onclick = () => b.closest(".modal").classList.add("hidden")));
+
+// リサイズで机の位置を組み直す
+window.addEventListener("resize", () => { office.built = false; if (state?.company) render(); });
 
 // ---------- ポーリング ----------
 async function poll() {

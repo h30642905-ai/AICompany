@@ -90,8 +90,16 @@ body.night .rug { background: rgba(220, 160, 195, .25); }
 .cooler { right: 26px; top: 44%; }
 
 /* ---------- キャラクター ---------- */
-#staffArea { position: absolute; left: 0; right: 0; bottom: 26px; display: flex; justify-content: center; gap: 34px; flex-wrap: wrap; padding: 0 30px; }
-.char { position: relative; width: 86px; text-align: center; }
+.staff-desk { position: absolute; width: 66px; height: 14px; background: #c69b5f; border-radius: 4px; box-shadow: 0 5px 0 #a37c42; }
+.staff-desk::after { content: "💻"; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 13px; }
+.char {
+  position: absolute; width: 86px; text-align: center; z-index: 4;
+  transition: left 2.4s ease-in-out, top 2.4s ease-in-out;
+}
+.char .doll { display: inline-block; }
+.char.walking .doll { animation: walkbob .32s infinite alternate; }
+.char.flip .doll { transform: scaleX(-1); }
+@keyframes walkbob { from { transform: translateY(0) rotate(-2deg); } to { transform: translateY(-4px) rotate(2deg); } }
 .char .face { font-size: 34px; line-height: 1.1; filter: drop-shadow(0 2px 1px rgba(0,0,0,.12)); }
 .char .body { width: 34px; height: 26px; margin: -4px auto 0; border-radius: 10px 10px 6px 6px; }
 .char .nametag {
@@ -101,16 +109,28 @@ body.night .rug { background: rgba(220, 160, 195, .25); }
 .char .status { font-size: .62rem; border-radius: 999px; padding: 0 8px; display: inline-block; margin-top: 2px; background: #dfe9f2; color: #56708a; }
 .char .status.working { background: var(--gold); color: #5a3c00; animation: blink 1.2s infinite alternate; }
 @keyframes blink { from { opacity: 1; } to { opacity: .55; } }
-.char .desk { width: 62px; height: 12px; background: #c69b5f; border-radius: 4px; margin: 4px auto 0; box-shadow: 0 4px 0 #a37c42; }
-.char.working .face { animation: workbob .5s infinite alternate; }
+.char.working .doll { animation: workbob .45s infinite alternate; }
 @keyframes workbob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+/* 頭の上の絵文字エモート（💭✍️☕🎵など） */
+.char .emote {
+  position: absolute; top: -20px; right: 2px; font-size: 17px; opacity: 0;
+  transition: opacity .4s; pointer-events: none;
+}
+.char .emote.show { opacity: 1; animation: emotefloat 1.8s ease-in-out infinite alternate; }
+@keyframes emotefloat { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+/* 作業中のカタカタ音符 */
+.char .type-dots { position: absolute; top: -4px; left: 4px; font-size: 11px; opacity: 0; }
+.char.working .type-dots { opacity: 1; animation: typedots 1s steps(3) infinite; }
+@keyframes typedots { from { content: ""; transform: translateY(0); } to { transform: translateY(-6px); opacity: 0; } }
 .bubble {
   position: absolute; bottom: 105%; left: 50%; transform: translateX(-50%);
   background: #fff; border-radius: 12px; padding: 6px 10px; font-size: .7rem; width: 170px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.13); z-index: 5; line-height: 1.5;
+  box-shadow: 0 2px 8px rgba(0,0,0,.13); z-index: 6; line-height: 1.5;
 }
 .bubble::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top-color: #fff; }
-.char.ceo { position: absolute; left: 55px; top: 52px; }
+.char.ceo { left: 55px; top: 52px; transition: none; }
+/* 提出時に飛ぶ書類 */
+.paper-fly { position: absolute; font-size: 22px; z-index: 20; transition: left 1.4s ease-in, top 1.4s ease-in, opacity 1.4s; pointer-events: none; }
 
 /* ---------- ワンタップ指示 ---------- */
 #actions { background: var(--panel); border-radius: 16px; padding: 10px 16px 14px; box-shadow: 0 2px 10px rgba(80,110,140,.08); }
