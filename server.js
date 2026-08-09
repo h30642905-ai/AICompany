@@ -28,6 +28,15 @@ const writeJSON = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2));
 let company = readJSON(COMPANY_PATH, null);
 let tasks = readJSON(TASKS_PATH, []);
 let chat = readJSON(CHAT_PATH, []);
+
+// ドット絵スプライト（public/img/chars/）。社員には設立時に重複なしで割り当てる
+const SPRITES = ["char01", "char02", "char03", "char04", "char05", "char06", "char07", "char08", "char09", "char10"];
+function assignSprites(employees) {
+  const pool = [...SPRITES].sort(() => Math.random() - 0.5);
+  employees.forEach((e, i) => { if (!e.sprite) e.sprite = pool[i % pool.length]; });
+}
+// 旧データ（絵文字時代）の移行
+if (company?.employees) { assignSprites(company.employees); writeJSON(COMPANY_PATH, company); }
 const saveAll = () => {
   if (company) writeJSON(COMPANY_PATH, company);
   writeJSON(TASKS_PATH, tasks);
@@ -39,7 +48,7 @@ const saveAll = () => {
 // task.status: 未着手 | 作業中 | 確認待ち | 完了
 let busy = false;            // codex は同時1ジョブ（順番に働く）
 const queue = [];            // 実行待ちジョブ
-let notice = company ? "" : "まずは「会社を設立する」から始めてね！";
+let notice = company ? "" : "まずは 会社を設立する からはじめよう！";
 
 function findEmp(id) { return company?.employees.find((e) => e.id === id); }
 function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
@@ -52,7 +61,7 @@ async function pump() {
   if (busy || queue.length === 0) return;
   busy = true;
   const job = queue.shift();
-  try { await job(); } catch (e) { notice = "⚠️ " + e.message; }
+  try { await job(); } catch (e) { notice = "！エラー： " + e.message; }
   busy = false;
   saveAll();
   pump();
@@ -80,7 +89,7 @@ function runTask(task) {
   if (!emp) return;
   emp.status = "working";
   task.status = "作業中";
-  notice = `${emp.name} が「${task.title}」に取りかかりました`;
+  notice = `${emp.name} が「${task.title}」に とりかかった！`;
   saveAll();
 
   enqueue(async () => {
@@ -109,8 +118,8 @@ ${companyContext()}
     task.status = "確認待ち";
     task.feedback = "";
     emp.status = "idle";
-    emp.bubble = `「${task.title}」できました！決裁トレイをみてください`;
-    notice = `📝 ${emp.name} が「${task.title}」を提出しました（決裁トレイへ）`;
+    emp.bubble = `「${task.title}」できました！決裁トレイを みてください`;
+    notice = `${emp.name} が「${task.title}」を ていしゅつ した！（決裁トレイへ）`;
   });
 }
 
@@ -133,7 +142,7 @@ async function handleAPI(req, res, url, body) {
   // 会社設立（ヒアリング内容から codex が会社と社員を生成）
   if (url.pathname === "/api/setup" && req.method === "POST") {
     const { name, business, goal, ceoName, vibe } = body;
-    notice = "🏗️ 会社を設立中…（30秒ほどかかります）";
+    notice = "会社を せつりつ 中……（30秒ほどかかります）";
     const generated = await codexJSON(
       `あなたは会社設立コンサルタントです。以下の情報から、バーチャルAIカンパニーの社員チームを設計してください。
 
@@ -146,10 +155,10 @@ async function handleAPI(req, res, url, body) {
 次のJSONだけを返す:
 {
  "employees": [
-   {"id":"英小文字の短いid","name":"日本語の親しみやすい名前(ひらがな/カタカナ2-4文字)","role":"役職(COO/AI秘書/ライター/商品企画/SNS担当/品質チェック担当 など事業内容に合わせて6人)","personality":"性格と得意分野を1文で","emoji":"その社員を表す絵文字1つ","color":"服の色(hex)"}
+   {"id":"英小文字の短いid","name":"日本語の親しみやすい名前(ひらがな/カタカナ2-4文字)","role":"役職(COO/AI秘書/ライター/商品企画/SNS担当/品質チェック担当 など事業内容に合わせて6人)","personality":"性格と得意分野を1文で","color":"イメージカラー(hexのパステル調)"}
  ]
 }
-条件: 必ず6人。1人目はCOO（社長の右腕）。名前は全員違う雰囲気に。colorはパステル調で全員別の色。`,
+条件: 必ず6人。1人目はCOO（社長の右腕）。名前は全員違う雰囲気に。colorは全員別の色。`,
       { effort: "low" }
     );
     company = {
@@ -159,10 +168,11 @@ async function handleAPI(req, res, url, body) {
       createdAt: new Date().toISOString(),
       employees: generated.employees.map((e) => ({ ...e, status: "idle", bubble: "" })),
     };
+    assignSprites(company.employees);
     tasks = [];
     chat = [];
-    company.employees[0].bubble = "セットアップ完了！まずは「今日のタスクを決める」を押してみて";
-    notice = `🎉 ${name} を設立しました！`;
+    company.employees[0].bubble = "セットアップかんりょう！まずは 今日のタスクを決める を押してみて";
+    notice = `${name} を せつりつ した！`;
     saveAll();
     return json(200, { ok: true });
   }
@@ -171,7 +181,7 @@ async function handleAPI(req, res, url, body) {
 
   // 今日のタスクを決める（COOが提案）
   if (url.pathname === "/api/plan" && req.method === "POST") {
-    notice = "🗓 COOが今日のタスクを考えています…";
+    notice = "COOが 今日のタスクを かんがえている……";
     enqueue(async () => {
       const coo = company.employees[0];
       const done = tasks.filter((t) => t.status === "完了").map((t) => t.title).slice(-10);
@@ -183,7 +193,7 @@ async function handleAPI(req, res, url, body) {
         tasks.push({ id: newId(), title: t.title, detail: t.detail, assignee: t.assignee, status: "未着手", createdAt: new Date().toISOString() });
       }
       coo.bubble = "今日のタスクを3つ用意しました！タスクボードから「働いてもらう」を押してね";
-      notice = "📋 今日のタスクがタスクボードに入りました";
+      notice = "今日のタスクが タスクボードに はいった！";
     });
     return json(200, { ok: true });
   }
@@ -218,10 +228,10 @@ async function handleAPI(req, res, url, body) {
       company.goalProgress = Math.min(100, company.goalProgress + 5);
       const emp = findEmp(task.assignee);
       if (emp) emp.bubble = "承認ありがとうございます！次もがんばります";
-      notice = `✅ 「${task.title}」を承認しました（会社目標 +5%）`;
+      notice = `「${task.title}」を しょうにん した！（会社目標 +5%）`;
     } else {
       task.feedback = body.comment || "もう一歩ブラッシュアップして";
-      notice = `↩️ 「${task.title}」を差し戻しました`;
+      notice = `「${task.title}」を さしもどした`;
       runTask(task);
     }
     saveAll();
@@ -232,7 +242,7 @@ async function handleAPI(req, res, url, body) {
   if (url.pathname === "/api/chat" && req.method === "POST") {
     const coo = company.employees[0];
     chat.push({ from: "社長", text: body.message, at: new Date().toISOString() });
-    notice = `💬 ${coo.name} が考え中…`;
+    notice = `${coo.name} が かんがえ中……`;
     enqueue(async () => {
       const history = chat.slice(-10).map((c) => `${c.from}: ${c.text}`).join("\n");
       const reply = await codexText(
@@ -248,7 +258,7 @@ async function handleAPI(req, res, url, body) {
 
   // 週次レビュー
   if (url.pathname === "/api/review" && req.method === "POST") {
-    notice = "📊 週次レビューを作成中…";
+    notice = "週次レビューを さくせい中……";
     enqueue(async () => {
       const coo = company.employees[0];
       const doneList = tasks.filter((t) => t.status === "完了").map((t) => `- ${t.title}（${findEmp(t.assignee)?.name || "?"}）`).join("\n");
@@ -258,8 +268,8 @@ async function handleAPI(req, res, url, body) {
       );
       const file = `${new Date().toISOString().slice(0, 10)}-weekly-review.md`;
       fs.writeFileSync(path.join(OUTPUT_DIR, file), text);
-      coo.bubble = "週次レビューを成果物BOXに入れました！";
-      notice = "📊 週次レビューが成果物BOXに入りました";
+      coo.bubble = "週次レビューを 成果物BOXに いれました！";
+      notice = "週次レビューが 成果物BOXに はいった！";
     });
     return json(200, { ok: true });
   }
@@ -277,7 +287,7 @@ async function handleAPI(req, res, url, body) {
   if (url.pathname === "/api/reset" && req.method === "POST") {
     company = null; tasks = []; chat = [];
     try { fs.rmSync(COMPANY_PATH, { force: true }); fs.rmSync(TASKS_PATH, { force: true }); fs.rmSync(CHAT_PATH, { force: true }); } catch {}
-    notice = "まずは「会社を設立する」から始めてね！";
+    notice = "まずは 会社を設立する からはじめよう！";
     return json(200, { ok: true });
   }
 

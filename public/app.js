@@ -22,8 +22,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 // オフィスのキャラクター常駐管理（わらわらアニメーション）
 // ============================================================
 const office = { built: false, chars: new Map(), desks: new Map() };
-const IDLE_EMOTES = ["☕", "🎵", "💬", "🌸", "😊", "📱", "🍡"];
-const WORK_EMOTES = ["💭", "✍️", "📝", "🔥", "💡"];
+const IDLE_EMOTES = ["♪", "……", "？", "ふぅ", "おちゃ", "ねこだ"];
+const WORK_EMOTES = ["……", "！", "カタカタ", "うーん", "ひらめき！"];
 
 function officeSize() {
   const el = $("#office");
@@ -59,10 +59,11 @@ function buildOffice(employees) {
 
   employees.forEach((e, i) => {
     const p = deskPos(i, employees.length);
-    const desk = document.createElement("div");
+    const desk = document.createElement("img");
     desk.className = "staff-desk";
-    desk.style.left = p.x + 10 + "px";
-    desk.style.top = p.y + 92 + "px";
+    desk.src = "img/props/desk.png";
+    desk.style.left = p.x + 8 + "px";
+    desk.style.top = p.y + 78 + "px";
     officeEl.appendChild(desk);
     office.desks.set(e.id, desk);
 
@@ -73,7 +74,7 @@ function buildOffice(employees) {
     el.innerHTML = `
       <div class="bubble" style="display:none"></div>
       <span class="emote"></span>
-      <div class="doll"><div class="face"></div><div class="body"></div></div>
+      <div class="doll"><img class="sprite" alt=""></div>
       <div class="nametag"></div>
       <div class="status"></div>`;
     officeEl.appendChild(el);
@@ -87,8 +88,7 @@ function updateChars(employees) {
     const c = office.chars.get(e.id);
     if (!c) return;
     const el = c.el;
-    el.querySelector(".face").textContent = e.emoji || "🙂";
-    el.querySelector(".body").style.background = e.color || "#9bc4e8";
+    el.querySelector(".sprite").src = `img/chars/${e.sprite || "char01"}.png`;
     el.querySelector(".nametag").textContent = `${e.name}｜${e.role}`;
     const st = el.querySelector(".status");
     st.textContent = e.status === "working" ? "作業中" : "待機中";
@@ -160,7 +160,6 @@ function paperFlyEffect() {
   const officeEl = $("#office");
   const paper = document.createElement("div");
   paper.className = "paper-fly";
-  paper.textContent = "📄";
   const { w, h } = officeSize();
   paper.style.left = w / 2 + "px";
   paper.style.top = h - 160 + "px";
@@ -178,7 +177,7 @@ function paperFlyEffect() {
 // ============================================================
 function render() {
   const c = state.company;
-  $("#notice").textContent = state.notice || (state.busy ? "🐝 AI社員が作業中です…" : "");
+  $("#notice").textContent = state.notice || (state.busy ? "AI社員が さぎょう中……" : "");
 
   if (!c) { $("#setupModal").classList.remove("hidden"); office.built = false; return; }
   $("#setupModal").classList.add("hidden");
@@ -190,8 +189,7 @@ function render() {
 
   // 社長（社長室に常駐）
   $("#ceoChar").innerHTML = `
-    <span class="emote show">👑</span>
-    <div class="doll"><div class="face">🤴</div><div class="body" style="background:#caa2d8"></div></div>
+    <div class="doll"><img class="sprite" src="img/chars/ceo.png" alt=""></div>
     <div class="nametag">${esc(c.ceoName)}｜社長</div>`;
 
   // 社員（初回だけDOM生成、以降は状態更新のみ→アニメが途切れない）
@@ -212,7 +210,7 @@ function render() {
     ? active.map((t) => {
         const emp = c.employees.find((e) => e.id === t.assignee);
         return `<div class="task-item"><div>${esc(t.title)}</div>
-          <div class="t-meta">${emp ? emp.emoji + " " + esc(emp.name) : "担当未定"}・${t.status}
+          <div class="t-meta">${emp ? esc(emp.name) : "担当未定"}・${t.status}
           ${t.status === "未着手" ? `<button onclick="startTask('${t.id}')">働いてもらう</button>` : ""}</div></div>`;
       }).join("")
     : `<div class="empty">タスクはありません。「今日のタスクを決める」を押してみて</div>`;
@@ -221,13 +219,13 @@ function render() {
   const pend = state.tasks.filter((t) => t.status === "確認待ち");
   $("#approveCount").textContent = pend.length;
   $("#approveList").innerHTML = pend.length
-    ? pend.map((t) => `<div class="approve-item" onclick="openOutput('${t.outputFile}','${t.id}')">🖋 ${esc(t.title)}</div>`).join("")
+    ? pend.map((t) => `<div class="approve-item" onclick="openOutput('${t.outputFile}','${t.id}')">${esc(t.title)}</div>`).join("")
     : `<div class="empty">決裁待ちはありません</div>`;
 
   // 成果物BOX
   $("#outputCount").textContent = state.outputs.length;
   $("#outputList").innerHTML = state.outputs.length
-    ? state.outputs.slice(0, 8).map((f) => `<div class="output-item" onclick="openOutput('${f}',null)">📄 ${esc(f)}</div>`).join("")
+    ? state.outputs.slice(0, 8).map((f) => `<div class="output-item" onclick="openOutput('${f}',null)">${esc(f)}</div>`).join("")
     : `<div class="empty">まだ成果物はありません</div>`;
 }
 
@@ -237,7 +235,7 @@ window.startTask = async (taskId) => { await api("/api/start", { taskId }); poll
 window.openOutput = async (file, taskId) => {
   const { name, text } = await api(`/api/output?f=${encodeURIComponent(file)}`);
   viewingFile = name; viewingTaskId = taskId;
-  $("#viewTitle").textContent = "📄 " + name;
+  $("#viewTitle").textContent = name;
   $("#viewBody").textContent = text;
   $("#viewApprove").style.display = taskId ? "" : "none";
   $("#viewReject").style.display = taskId ? "" : "none";
@@ -273,7 +271,7 @@ async function act(kind) {
   if (kind === "review") await api("/api/review", {});
   if (kind === "outputs") { const f = state.outputs[0]; if (f) openOutput(f, null); else alert("まだ成果物がありません"); }
   if (kind === "assign") {
-    $("#assignWho").innerHTML = state.company.employees.map((e) => `<option value="${e.id}">${e.emoji} ${esc(e.name)}（${esc(e.role)}）</option>`).join("");
+    $("#assignWho").innerHTML = state.company.employees.map((e) => `<option value="${e.id}">${esc(e.name)}（${esc(e.role)}）</option>`).join("");
     $("#assignModal").classList.remove("hidden");
   }
   if (kind === "chat") { renderChat(); $("#chatModal").classList.remove("hidden"); }

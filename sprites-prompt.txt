@@ -1,0 +1,43 @@
+# 作業指示: MOTHER2風ドット絵スプライトの生成
+
+あなたはレトロRPGのドット絵師です。内蔵の image_gen ツール（gpt-image-2）で、以下のスプライト画像を1枚ずつ生成し、カレントディレクトリの `public/img/` 配下に保存してください。API キー・SDK・curl は禁止。image_gen を直接呼ぶこと。
+
+# 共通の画風（全画像で厳守）
+
+- **MOTHER2（EarthBound）風のドット絵**。SFC時代の16bitスタイル、太い黒に近い輪郭、フラットで明るい配色、頭身低め（2〜2.5頭身）のかわいいキャラ
+- **背景は完全透過**（image_gen の background transparent を使う）
+- サイズ 256x256、被写体を中央に大きく
+- 文字は入れない
+
+# 生成リスト（ファイル名は正確に）
+
+## キャラクター（正面向き・全身立ち絵・多様な見た目に）
+1. public/img/chars/char01.png — スーツ姿のしっかり者の女性社員（黒髪ボブ）
+2. public/img/chars/char02.png — メガネの真面目な男性社員（ネクタイ）
+3. public/img/chars/char03.png — おだんご頭の元気な女性社員（カーディガン）
+4. public/img/chars/char04.png — ふわふわパーマの穏やかな女性社員（エプロン）
+5. public/img/chars/char05.png — 帽子をかぶった職人風の男性社員
+6. public/img/chars/char06.png — ポニーテールの快活な女性社員（パーカー）
+7. public/img/chars/char07.png — ひげの渋いベテラン男性社員（ベスト）
+8. public/img/chars/char08.png — 三つ編みのおっとり女性社員（ワンピース）
+9. public/img/chars/char09.png — 短髪でスポーティな男性社員（ジャージ）
+10. public/img/chars/char10.png — 白衣の研究者風の社員（中性的）
+11. public/img/chars/ceo.png — 小さな王冠をつけた社長（マント付き・えらそうだけど愛嬌がある）
+
+## オフィスの小物（同じドット絵画風で）
+12. public/img/props/desk.png — 木の事務机（正面、ノートPCが乗っている）
+13. public/img/props/table.png — 丸い会議テーブル（上から見た図）
+14. public/img/props/cat.png — 三毛猫（横向きで歩いている）
+15. public/img/props/plant.png — 観葉植物の鉢植え
+16. public/img/props/cooler.png — ウォーターサーバー
+
+# 手順
+
+1. `mkdir -p public/img/chars public/img/props`
+2. 上から順に image_gen で生成し、指定パスに保存（16回）
+3. 各画像を view_image で開いて「ドット絵になっているか・背景が透過か・輪郭がはっきりしているか」を確認。写実調やアニメ塗りになっていたらやり直す
+4. すべて揃ったら `ls public/img/chars public/img/props` の結果を報告して終了
+
+# 完走ルール
+
+16枚すべてが存在するまで打ち切らない。1枚失敗しても次へ進み、最後に未完成分を再試行する。
