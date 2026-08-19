@@ -35,7 +35,11 @@ node bin/cli.js        # サーバー起動 + ブラウザを開く（http://loc
 - ポート: 4680（`AICOMPANY_PORT` で変更可）
 - **依存ゼロ（npm install 不要）・ビルド不要**。`server.js` / `public/` を直接編集すれば即反映（サーバー再起動のみ）
 - codex 呼び出し: `lib/codex.js`（ArtMuseum と同じ単発型パターン）
-- モデル/推論強度: `AICOMPANY_MODEL`（既定 gpt-5.5）/ `AICOMPANY_EFFORT`（既定 medium）
+- モデル/推論強度: `AICOMPANY_MODEL`（既定 gpt-5.6-sol）/ `AICOMPANY_EFFORT`（既定 medium）
+  - `gpt-5.6-sol` は codex CLI **0.148.0 以上**が必須（0.140 系は 400 `requires a newer version of Codex`）
+- codex 実体の解決: `lib/codex.js` の `resolveCodexBin()`。Windows の `spawn()` は PATHEXT を補完せず
+  `codex` だけでは ENOENT になるため、`codex.exe`（PATH → npm グローバル vendor → デスクトップ版）を
+  順に探す。明示指定は `AICOMPANY_CODEX_BIN`
 - **常時起動について**: サーバーを立ち上げたターミナルが「会社の電源」。閉じると閉店（データは残る）。
   再開はもう一度起動コマンドを実行するだけ。
 
