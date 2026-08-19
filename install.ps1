@@ -1,6 +1,6 @@
 # AIカンパニー — Windows one-line installer & launcher
 #
-#   iwr -useb https://raw.githubusercontent.com/Getabako/AICompany/main/install.ps1 | iex
+#   iwr -useb https://raw.githubusercontent.com/h30642905-ai/AICompany/main/install.ps1 | iex
 #
 # 何度貼っても OK。初回はダウンロード、2 回目以降は最新版に更新して起動。
 
@@ -15,7 +15,7 @@ trap {
     break
 }
 
-$GH_REPO   = if ($env:AICOMPANY_REPO)   { $env:AICOMPANY_REPO }   else { "Getabako/AICompany" }
+$GH_REPO   = if ($env:AICOMPANY_REPO)   { $env:AICOMPANY_REPO }   else { "h30642905-ai/AICompany" }
 $BRANCH    = if ($env:AICOMPANY_BRANCH) { $env:AICOMPANY_BRANCH } else { "main" }
 $DesktopDir = [Environment]::GetFolderPath('Desktop')
 $InstallDir = if ($env:AICOMPANY_HOME)  { $env:AICOMPANY_HOME }  else { Join-Path $DesktopDir "AICompany" }

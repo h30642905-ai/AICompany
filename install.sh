@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # AIカンパニー — one-line installer & launcher
 #
-#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Getabako/AICompany/main/install.sh)"
+#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/h30642905-ai/AICompany/main/install.sh)"
 #
 # 何度貼っても OK。初回はダウンロード、2 回目以降は最新版に更新して起動するだけ。
 
 set -e
 
-GH_REPO="${AICOMPANY_REPO:-Getabako/AICompany}"
+GH_REPO="${AICOMPANY_REPO:-h30642905-ai/AICompany}"
 BRANCH="${AICOMPANY_BRANCH:-main}"
 INSTALL_DIR="${AICOMPANY_HOME:-$HOME/Desktop/AICompany}"
 

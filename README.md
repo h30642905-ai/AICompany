@@ -9,16 +9,19 @@
 **Mac** — ターミナルに貼り付け:
 
 ```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Getabako/AICompany/main/install.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/h30642905-ai/AICompany/main/install.sh)"
 ```
 
 **Windows** — PowerShellに貼り付け:
 
 ```
-iwr -useb https://raw.githubusercontent.com/Getabako/AICompany/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/h30642905-ai/AICompany/main/install.ps1 | iex
 ```
 
 ※ 事前に「第一の儀（環境構築）」（Node.js / git / Codex）が必要です。
+
+> このリポジトリは [Getabako/AICompany](https://github.com/Getabako/AICompany) のフォークです。
+> Windows で codex を起動できない不具合の修正と、既定モデルの gpt-5.6-sol 化を加えています。
 
 ## 遊び方（＝働き方）
 
